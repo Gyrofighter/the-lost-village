@@ -8,6 +8,9 @@ ACPP_BasicCharacter::ACPP_BasicCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationYaw = false;	
+	
 
 }
 
@@ -25,10 +28,5 @@ void ACPP_BasicCharacter::Tick(float DeltaTime)
 
 }
 
-// Called to bind functionality to input
-void ACPP_BasicCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-}
 
