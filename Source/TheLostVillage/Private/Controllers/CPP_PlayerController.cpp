@@ -7,40 +7,66 @@
 ACPP_PlayerController::ACPP_PlayerController()
 {
 	bShowMouseCursor = true;
-	bLeftMouseInputPressed = false;
+	bLMBPressed = false;
 
 }
+
+
 
 
 void ACPP_PlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 
-	if (bLeftMouseInputPressed)
+	if (GetPawn() && bLMBPressed && GetHitResultUnderCursor(ECC_Visibility, false, HitResultUnderCursor))
 	{
-		FHitResult L_Hit;
-		GetHitResultUnderCursor(ECC_Visibility, false, L_Hit);
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, L_Hit.Location);		
-	}
+		ResultLocation = HitResultUnderCursor.Location;
+		GetPawn()->AddMovementInput(UKismetMathLibrary::GetDirectionUnitVector(GetPawn()->GetActorLocation(), ResultLocation));
+	}	
 }
-
 
 
 void ACPP_PlayerController::SetupInputComponent()
 {
 
 	Super::SetupInputComponent();
-	InputComponent->BindAction("LeftMouseInput", IE_Pressed, this, &ACPP_PlayerController::LeftMouseInputPressed);
-	InputComponent->BindAction("LeftMouseInput", IE_Released, this, &ACPP_PlayerController::LeftMouseInputReleased);
+	InputComponent->BindAction("LMBClick", IE_Pressed, this, &ACPP_PlayerController::LeftMouseButtonPressed);
+	InputComponent->BindAction("LMBClick", IE_Released, this, &ACPP_PlayerController::LeftMouseButtonReleased);
+	
 
 }
 
-void ACPP_PlayerController::LeftMouseInputPressed()
+void ACPP_PlayerController::LeftMouseButtonPressed()
 {
-	bLeftMouseInputPressed = true;
+	bLMBPressed = true;
+	GetWorld()->GetTimerManager().SetTimer(StopMovementTimer, this, &ACPP_PlayerController::StopMovementTimerExpired, 0.1f, false);
 }
 
-void ACPP_PlayerController::LeftMouseInputReleased()
+void ACPP_PlayerController::LeftMouseButtonReleased()
 {
-	bLeftMouseInputPressed = false;
+	bLMBPressed = false;
+	UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, ResultLocation);
+	MoveToLocationOnServer(this, ResultLocation);
+	GetWorld()->GetTimerManager().PauseTimer(StopMovementTimer);
+	
+	
+}
+
+void ACPP_PlayerController::StopMovementTimerExpired()
+{
+
+	StopMovement();
+	StopMovementOnServer(this);
+
+}
+
+void ACPP_PlayerController::StopMovementOnServer_Implementation(AController* Controller)
+{
+
+	Controller->StopMovement();
+}
+
+void ACPP_PlayerController::MoveToLocationOnServer_Implementation(AController* Controller, FVector Goal)
+{
+	UAIBlueprintHelperLibrary::SimpleMoveToLocation(Controller, Goal);
 }
